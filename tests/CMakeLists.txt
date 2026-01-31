@@ -21,6 +21,14 @@ add_executable(libromfs-test
 target_link_libraries(libromfs-test PRIVATE ${LIBROMFS_LIBRARY})
 target_include_directories(libromfs-test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
+if (USE_BOOST_FILESYSTEM)
+    target_compile_definitions(libromfs-test PRIVATE USE_BOOST_FILESYSTEM)
+    find_package(Boost 1.44 REQUIRED COMPONENTS filesystem)
+    if(Boost_FOUND)
+        target_link_libraries(libromfs-test PRIVATE Boost::filesystem)
+    endif()
+endif()
+
 # Enable testing
 enable_testing()
 add_test(NAME libromfs-test COMMAND libromfs-test)

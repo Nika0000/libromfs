@@ -1,6 +1,7 @@
 # libromfs
 
 ![CI Tests](https://github.com/Nika0000/libromfs/workflows/CI%20Tests/badge.svg)
+[![CI Build](https://github.com/Nika0000/libromfs/actions/workflows/build.yml/badge.svg)](https://github.com/Nika0000/libromfs/actions/workflows/build.yml)
 
 libromfs is an easy way to bundle files, resources and entire directory structures directly into any C++ application and access them through a simple interface. 
 
