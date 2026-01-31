@@ -1,5 +1,7 @@
 # libromfs
 
+![CI Tests](https://github.com/WerWolv/libromfs/workflows/CI%20Tests/badge.svg)
+
 libromfs is an easy way to bundle files, resources and entire directory structures directly into any C++ application and access them through a simple interface. 
 
 The main advantage of this library is that you no longer need to ship your application with a resources folder that contains data that is not intended to be modified anyways. Simply bundle it all into a single, standalone executable.
@@ -14,6 +16,9 @@ set(LIBROMFS_PROJECT_NAME ${PROJECT_NAME})
 
 # Set the location of our romfs folder
 set(LIBROMFS_RESOURCE_LOCATION "${CMAKE_SOURCE_DIR}/romfs")
+
+# Optional: Enable zlib compression (requires zlib, see COMPRESSION.md)
+# set(LIBROMFS_COMPRESS_RESOURCES ON)
 
 # Optional: Exclude specific file extensions
 # set(LIBROMFS_EXCLUDE_EXTENSIONS ".log,.tmp,.bak,.DS_Store")

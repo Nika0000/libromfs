@@ -1,0 +1,5 @@
+{
+  "name": "libromfs",
+  "version": "1.0",
+  "features": ["embedding", "compression", "listing"]
+}

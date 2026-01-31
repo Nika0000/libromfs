@@ -2,16 +2,19 @@
 
 #include <cstdint>
 #include <cstddef>
-#include <filesystem>
-#include <string_view>
-
-#if __cplusplus >= 202002L
+#include <string>
+#include <vector>
+#if __cplusplus > 202002L
 #include <span>
 #endif
-
-#include <nonstd/span.hpp>
-
-#include <vector>
+#ifdef USE_BOOST_FILESYSTEM
+#include <boost/filesystem.hpp>
+namespace fs = boost::filesystem;
+#else
+#include <filesystem>
+namespace fs = std::filesystem;
+#endif
+#include "nonstd/span.hpp"
 
 #define ROMFS_CONCAT_IMPL(x, y) x##y
 #define ROMFS_CONCAT(x, y) ROMFS_CONCAT_IMPL(x, y)
@@ -24,9 +27,6 @@
     #define ROMFS_VISIBILITY
 #endif
 
-template<typename T>
-concept ByteType = std::is_trivial_v<T> && sizeof(T) == sizeof(std::byte);
-
 namespace romfs {
 
     namespace impl {
@@ -35,28 +35,23 @@ namespace romfs {
 
     class Resource {
     public:
-        constexpr Resource() = default;
+        Resource() = default;
         explicit constexpr Resource(const nonstd::span<std::byte> &content) : m_compressedData(content) {}
 
-        template<ByteType T = std::byte>
-        [[nodiscard]] const T* data() const {
+        [[nodiscard]]
+        const std::byte* data() const {
             impl::ROMFS_CONCAT(decompress_if_needed_, LIBROMFS_PROJECT_NAME)(m_decompressedData, m_compressedData);
-            if (!m_decompressedData.empty()) [[likely]]
-                return reinterpret_cast<const T*>(this->m_decompressedData.data());
+            if (!m_decompressedData.empty())
+                return this->m_decompressedData.data();
             else
-                return reinterpret_cast<const T*>(this->m_compressedData.data());
-        }
-
-        template<ByteType T = std::byte>
-        [[nodiscard]] nonstd::span<const T> span() const {
-            return { this->data<T>(), this->size() };
+                return this->m_compressedData.data();
         }
 
         [[nodiscard]]
         std::size_t size() const {
             impl::ROMFS_CONCAT(decompress_if_needed_, LIBROMFS_PROJECT_NAME)(m_decompressedData, m_compressedData);
 
-            if (!this->m_decompressedData.empty()) [[likely]]
+            if (!this->m_decompressedData.empty())
                 return this->m_decompressedData.size() - 1;
             else
                 return m_compressedData.size_bytes() - 1;
@@ -64,25 +59,12 @@ namespace romfs {
 
         [[nodiscard]]
         std::string_view string() const {
-            return { reinterpret_cast<const char*>(this->data()), this->size() + 1 };
+            return { reinterpret_cast<const char*>(this->data()), this->size() };
         }
-
-#if __cplusplus >= 202002L
-        [[nodiscard]]
-        std::u8string_view u8string() const {
-            return { reinterpret_cast<const char8_t *>(this->data()), this->size() + 1 };
-        }
-#else
-        [[nodiscard]]
-        std::string_view u8string() const {
-          return {reinterpret_cast<const char *>(this->data()), this->size() + 1};
-        }
-#endif
 
         [[nodiscard]]
         bool valid() const {
-            impl::ROMFS_CONCAT(decompress_if_needed_, LIBROMFS_PROJECT_NAME)(m_decompressedData, m_compressedData);
-            return !this->m_decompressedData.empty() && this->m_decompressedData.data() != nullptr;
+            return !this->m_compressedData.empty() && this->m_compressedData.data() != nullptr;
         }
 
     private:
@@ -97,13 +79,14 @@ namespace romfs {
             Resource resource;
         };
 
-        [[nodiscard]] ROMFS_VISIBILITY const Resource& ROMFS_CONCAT(get_, LIBROMFS_PROJECT_NAME)(const std::filesystem::path &path);
-        [[nodiscard]] ROMFS_VISIBILITY std::vector<std::filesystem::path> ROMFS_CONCAT(list_, LIBROMFS_PROJECT_NAME)(const std::filesystem::path &path);
+        [[nodiscard]] ROMFS_VISIBILITY const Resource& ROMFS_CONCAT(get_, LIBROMFS_PROJECT_NAME)(const fs::path &path);
+        [[nodiscard]] ROMFS_VISIBILITY std::vector<fs::path> ROMFS_CONCAT(list_, LIBROMFS_PROJECT_NAME)(const fs::path &path);
         [[nodiscard]] ROMFS_VISIBILITY std::string_view ROMFS_CONCAT(name_, LIBROMFS_PROJECT_NAME)();
 
     }
 
-    [[nodiscard]] ROMFS_VISIBILITY inline const Resource& get(const std::filesystem::path &path) { return impl::ROMFS_CONCAT(get_, LIBROMFS_PROJECT_NAME)(path); }
-    [[nodiscard]] ROMFS_VISIBILITY inline std::vector<std::filesystem::path> list(const std::filesystem::path &path = {}) { return impl::ROMFS_CONCAT(list_, LIBROMFS_PROJECT_NAME)(path); }
+    [[nodiscard]] ROMFS_VISIBILITY inline const Resource& get(const fs::path &path) { return impl::ROMFS_CONCAT(get_, LIBROMFS_PROJECT_NAME)(path); }
+    [[nodiscard]] ROMFS_VISIBILITY inline std::vector<fs::path> list(const fs::path &path = {}) { return impl::ROMFS_CONCAT(list_, LIBROMFS_PROJECT_NAME)(path); }
     [[nodiscard]] ROMFS_VISIBILITY inline std::string_view name() { return impl::ROMFS_CONCAT(name_, LIBROMFS_PROJECT_NAME)(); }
+
 }

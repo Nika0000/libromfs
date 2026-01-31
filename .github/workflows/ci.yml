@@ -1,0 +1,215 @@
+name: CI Tests
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main, develop ]
+
+jobs:
+  build-generator:
+    name: Build generator
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up build dependencies (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake g++ ninja-build
+        
+    - name: Set up build dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install cmake ninja
+        
+    - name: Set up build dependencies (Windows)
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+      
+    - name: Configure CMake
+      working-directory: generator
+      run: |
+        cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+          -DLIBROMFS_PROJECT_NAME=standalone
+      shell: bash
+      
+    - name: Build generator
+      working-directory: generator
+      run: cmake --build build --config Release
+      
+    - name: Prepare artifact (Linux/macOS)
+      if: runner.os != 'Windows'
+      working-directory: generator/build
+      run: |
+        mkdir -p artifact
+        cp generator-standalone artifact/
+        chmod +x artifact/generator-standalone
+      shell: bash
+      
+    - name: Prepare artifact (Windows)
+      if: runner.os == 'Windows'
+      working-directory: generator/build
+      run: |
+        mkdir artifact
+        copy generator-standalone.exe artifact\
+      shell: cmd
+      
+    - name: Upload generator artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: libromfs-generator-${{ runner.os }}
+        path: generator/build/artifact/*
+        retention-days: 30
+
+  test-without-compression:
+  test-without-compression:
+    name: Test without compression
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up build dependencies (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake g++ ninja-build
+        
+    - name: Set up build dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install cmake ninja
+        
+    - name: Set up build dependencies (Windows)
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+      
+    - name: Configure CMake
+      working-directory: tests
+      run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      
+    - name: Build
+      working-directory: tests
+      run: cmake --build build --config Release
+      
+    - name: Run tests
+      working-directory: tests
+      run: ctest --test-dir build --output-on-failure --build-config Release
+
+  test-with-compression:
+    name: Test with compression
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up build dependencies (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake g++ ninja-build zlib1g-dev
+        
+    - name: Set up build dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install cmake ninja zlib
+        
+    - name: Set up build dependencies (Windows)
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+      
+    - name: Install zlib (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        vcpkg install zlib:x64-windows
+        echo "CMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
+      shell: bash
+      
+    - name: Configure CMake with compression
+      working-directory: tests
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DLIBROMFS_COMPRESS_RESOURCES=ON -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+        else
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DLIBROMFS_COMPRESS_RESOURCES=ON
+        fi
+      shell: bash
+      
+    - name: Build with compression
+      working-directory: tests
+      run: cmake --build build --config Release
+      
+    - name: Run compression tests
+      working-directory: tests
+      run: ctest --test-dir build --output-on-failure --build-config Release
+
+  test-cross-platform:
+    name: Cross-platform compatibility test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake g++ ninja-build
+        
+    - name: Test C++20 standard
+      working-directory: tests
+      run: |
+        cmake -B build-cpp20 -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
+        cmake --build build-cpp20
+        ctest --test-dir build-cpp20 --output-on-failure
+        
+    - name: Clean build
+      run: rm -rf tests/build-cpp20
+      
+    - name: Test with Boost filesystem (optional)
+      working-directory: tests
+      run: |
+        sudo apt-get install -y libboost-filesystem-dev
+        cmake -B build-boost -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_BOOST_FILESYSTEM=ON
+        cmake --build build-boost
+        ctest --test-dir build-boost --output-on-failure
+
+  lint-and-format:
+    name: Code quality checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Check for trailing whitespace
+      run: |
+        if git grep -n '[[:blank:]]$' -- '*.cpp' '*.hpp' '*.cmake' 'CMakeLists.txt'; then
+          echo "Error: Found trailing whitespace"
+          exit 1
+        fi
+        
+    - name: Check CMakeLists.txt exists
+      run: |
+        test -f CMakeLists.txt
+        test -f tests/CMakeLists.txt
+        test -f lib/CMakeLists.txt
+        test -f generator/CMakeLists.txt

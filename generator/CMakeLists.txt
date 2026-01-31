@@ -1,3 +1,9 @@
+# Check if this is being built standalone or as part of parent project
+if(NOT DEFINED LIBROMFS_PROJECT_NAME)
+    cmake_minimum_required(VERSION 3.16)
+    set(LIBROMFS_PROJECT_NAME "standalone" CACHE STRING "Project name for standalone build")
+endif()
+
 project(generator-${LIBROMFS_PROJECT_NAME})
 set(CMAKE_CXX_STANDARD 20)
 
@@ -11,16 +17,15 @@ if (CMAKE_CROSSCOMPILING)
     SET(CMAKE_CXX_FLAGS ${NATIVE_CMAKE_CXX_FLAGS})
 endif()
 
-
 # Add sources
 add_executable(${PROJECT_NAME}
     source/main.cpp
 )
 
-string(REPLACE ";" "," LIBROMFS_RESOURCE_LOCATION_STRING "${LIBROMFS_RESOURCE_LOCATION}")
+# Pass project name and resource location as compile definitions
+target_compile_definitions(${PROJECT_NAME} PRIVATE LIBROMFS_PROJECT_NAME="${LIBROMFS_PROJECT_NAME}")
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE RESOURCE_LOCATION="${LIBROMFS_RESOURCE_LOCATION_STRING}" LIBROMFS_PROJECT_NAME="${LIBROMFS_PROJECT_NAME}")
-
+# Pass exclusion options if defined
 if (LIBROMFS_EXCLUDE_EXTENSIONS)
     target_compile_definitions(${PROJECT_NAME} PRIVATE EXCLUDE_EXTENSIONS="${LIBROMFS_EXCLUDE_EXTENSIONS}")
 endif()
@@ -30,6 +35,14 @@ if (LIBROMFS_EXCLUDE_FOLDERS)
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
+
+if (USE_BOOST_FILESYSTEM)
+    find_package(Boost 1.44 REQUIRED COMPONENTS filesystem)
+    if(Boost_FOUND)
+        target_link_libraries(${PROJECT_NAME} PRIVATE Boost::filesystem)
+        target_compile_options(${PROJECT_NAME} PRIVATE -DUSE_BOOST_FILESYSTEM)
+    endif()
+endif ()
 
 if (LIBROMFS_COMPRESS_RESOURCES)
     find_package(ZLIB QUIET)
@@ -47,7 +60,7 @@ if (LIBROMFS_COMPRESS_RESOURCES)
             target_compile_definitions(${PROJECT_NAME} PRIVATE LIBROMFS_COMPRESS_RESOURCES=1)
         endif()
     else()
-        message(WARNING "Requested RomFS to be compressed but zlib is unavailable! Resulting RomFS will NOT be compressed.")
+        message(WARNING "Requested RomFS generator to be built with compression but zlib is unavailable! Resources will NOT be compressed.")
     endif()
 endif()
 

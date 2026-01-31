@@ -2,9 +2,10 @@ cmake_minimum_required(VERSION 3.16)
 
 option(LIBROMFS_PROJECT_NAME "Project name" "")
 option(LIBROMFS_RESOURCE_LOCATION "Resource location" "")
-option(LIBROMFS_COMPRESS_RESOURCES "If resources should be zlib compressed" ON)
+option(LIBROMFS_COMPRESS_RESOURCES "If resources should be zlib compressed (IMPORTANT: both generator and library must have zlib available, or you'll get a compile error)" OFF)
 option(LIBROMFS_EXCLUDE_EXTENSIONS "Comma-separated list of file extensions to exclude" "")
 option(LIBROMFS_EXCLUDE_FOLDERS "Comma-separated list of folder names to exclude" "")
+option(LIBROMFS_PREBUILT_GENERATOR "Using prebuilt resources generator" "")
 
 if (NOT LIBROMFS_PROJECT_NAME)
     message(FATAL_ERROR "LIBROMFS_PROJECT_NAME is not set")
@@ -15,15 +16,19 @@ if (NOT LIBROMFS_RESOURCE_LOCATION)
 endif ()
 
 project(libromfs_base-${LIBROMFS_PROJECT_NAME})
+set(ROMFS "libromfs_resources.cpp")
 
 # Make sure libromfs is configured correctly
 if (NOT DEFINED LIBROMFS_RESOURCE_LOCATION)
     message(FATAL_ERROR "To use libromfs, please point the variable LIBROMFS_RESOURCE_LOCATION to a valid folder path")
+elseif (NOT EXISTS ${LIBROMFS_RESOURCE_LOCATION} OR NOT IS_DIRECTORY ${LIBROMFS_RESOURCE_LOCATION})
+    message(FATAL_ERROR "LIBROMFS_RESOURCE_LOCATION has been defined but does not point to a valid folder")
 endif ()
 
 set(LIBROMFS_LIBRARY libromfs-${LIBROMFS_PROJECT_NAME} PARENT_SCOPE)
 
 # Add libromfs components
-add_subdirectory(generator)
+if(NOT LIBROMFS_PREBUILT_GENERATOR)
+    add_subdirectory(generator)
+endif ()
 add_subdirectory(lib)
-

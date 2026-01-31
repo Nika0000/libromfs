@@ -3,14 +3,9 @@ project("libromfs-${LIBROMFS_PROJECT_NAME}")
 set(CMAKE_CXX_STANDARD 20)
 
 # Gather romfs files
-set(ROMFS_FILES "")
-
-foreach (path ${LIBROMFS_RESOURCE_LOCATION})
-    file(GLOB_RECURSE ROMFS_FILES_PART
-        "${path}/*"
-    )
-    list(APPEND ROMFS_FILES ${ROMFS_FILES_PART})
-endforeach ()
+file(GLOB_RECURSE ROMFS_FILES
+    "${LIBROMFS_RESOURCE_LOCATION}/*"
+)
 
 # Add sources
 add_library(${PROJECT_NAME} STATIC
@@ -20,6 +15,14 @@ add_library(${PROJECT_NAME} STATIC
 target_include_directories(${PROJECT_NAME} PUBLIC include)
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
 target_compile_definitions(${PROJECT_NAME} PUBLIC LIBROMFS_PROJECT_NAME=${LIBROMFS_PROJECT_NAME})
+
+if (USE_BOOST_FILESYSTEM)
+    find_package(Boost 1.44 REQUIRED COMPONENTS filesystem)
+    if(Boost_FOUND)
+        target_link_libraries(${PROJECT_NAME} PRIVATE Boost::filesystem)
+        target_compile_options(${PROJECT_NAME} PRIVATE -DUSE_BOOST_FILESYSTEM)
+    endif()
+endif ()
 
 if (LIBROMFS_COMPRESS_RESOURCES)
     find_package(ZLIB QUIET)
@@ -42,9 +45,20 @@ if (LIBROMFS_COMPRESS_RESOURCES)
 endif()
 
 # Make sure libromfs gets rebuilt when any of the resources are changed
-add_custom_command(OUTPUT ${ROMFS}
-        COMMAND $<TARGET_FILE:generator-${LIBROMFS_PROJECT_NAME}>
-        DEPENDS generator-${LIBROMFS_PROJECT_NAME} ${ROMFS_FILES}
-        )
+if (LIBROMFS_PREBUILT_GENERATOR)
+    message(STATUS "Using prebuilt libromfs-generator: ${LIBROMFS_PREBUILT_GENERATOR}")
+    add_custom_command(OUTPUT ${ROMFS}
+            COMMAND ${LIBROMFS_PREBUILT_GENERATOR}
+                ${LIBROMFS_PROJECT_NAME} ${LIBROMFS_RESOURCE_LOCATION}
+            DEPENDS ${ROMFS_FILES}
+            )
+else ()
+    message(STATUS "Using libromfs-generator: $<TARGET_FILE:generator-${LIBROMFS_PROJECT_NAME}>")
+    add_custom_command(OUTPUT ${ROMFS}
+            COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:generator-${LIBROMFS_PROJECT_NAME}>
+                ${LIBROMFS_PROJECT_NAME} ${LIBROMFS_RESOURCE_LOCATION}
+            DEPENDS generator-${LIBROMFS_PROJECT_NAME} ${ROMFS_FILES}
+            )
+endif ()
 
 add_custom_target(romfs_file_packer-${LIBROMFS_PROJECT_NAME} ALL DEPENDS ${ROMFS_FILES})

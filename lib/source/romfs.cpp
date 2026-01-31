@@ -1,7 +1,5 @@
 #include <romfs/romfs.hpp>
 
-#include <ranges>
-
 #if defined(LIBROMFS_COMPRESS_RESOURCES)
     #include <zlib.h>
 #endif
@@ -61,24 +59,31 @@ namespace romfs {
     }
 
 
-    ROMFS_VISIBILITY const romfs::Resource &impl::ROMFS_CONCAT(get_, LIBROMFS_PROJECT_NAME)(const std::filesystem::path &path) {
+    ROMFS_VISIBILITY const romfs::Resource &impl::ROMFS_CONCAT(get_, LIBROMFS_PROJECT_NAME)(const fs::path &path) {
         for (const auto &[resourcePath, resourceData] : ROMFS_CONCAT(ROMFS_NAME, _get_resources)()) {
-            if (path == resourcePath)
+            if (path == fs::path(resourcePath))
                 return resourceData;
         }
 
-        throw std::invalid_argument(std::string("Invalid romfs resource path! File '") + std::string(romfs::name()) + "' : " + path.string());
+        throw std::invalid_argument(std::string("Invalid romfs resource path for '") + std::string(romfs::name()) + "' : " + path.string());
     }
 
-    ROMFS_VISIBILITY std::vector<std::filesystem::path> impl::ROMFS_CONCAT(list_, LIBROMFS_PROJECT_NAME)(const std::filesystem::path &parent) {
-        std::vector<std::filesystem::path> result;
-        for (const auto &pathString : ROMFS_CONCAT(ROMFS_NAME, _get_paths)()) {
-            auto path = std::filesystem::path(pathString);
-            if (std::ranges::mismatch(parent, path).in1 == parent.end())
-                result.emplace_back(std::move(path));
+    ROMFS_VISIBILITY std::vector<fs::path> impl::ROMFS_CONCAT(list_, LIBROMFS_PROJECT_NAME)(const fs::path &parent) {
+        if (parent.empty()) {
+            std::vector<fs::path> result;
+            for (const auto &pathString : ROMFS_CONCAT(ROMFS_NAME, _get_paths)()) {
+                result.emplace_back(pathString);
+            }
+            return result;
+        } else {
+            std::vector<fs::path> result;
+            for (const auto &pathString : ROMFS_CONCAT(ROMFS_NAME, _get_paths)()) {
+                auto path = fs::path(pathString);
+                if (path.parent_path() == parent)
+                    result.push_back(path);
+            }
+            return result;
         }
-
-        return result;
     }
 
     ROMFS_VISIBILITY std::string_view impl::ROMFS_CONCAT(name_, LIBROMFS_PROJECT_NAME)() {
