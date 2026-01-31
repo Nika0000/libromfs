@@ -26,7 +26,7 @@ TEST(compressed_file_content) {
 TEST(compressed_binary_integrity) {
     auto resource = romfs::get("binary.bin");
     ASSERT(resource.valid(), "Compressed binary resource should be valid");
-    
+
     // Check PNG signature is preserved after compression/decompression
     const std::byte* data = resource.data();
     ASSERT(static_cast<unsigned char>(data[0]) == 0x89, "PNG signature byte 0 should be preserved");
@@ -38,17 +38,17 @@ TEST(compressed_binary_integrity) {
 // Test: Multiple accesses to same compressed file (caching)
 TEST(compressed_file_caching) {
     auto resource = romfs::get("data.json");
-    
+
     // First access - triggers decompression
     auto content1 = resource.string();
     auto size1 = resource.size();
     auto data1 = resource.data();
-    
+
     // Second access - should use cached data
     auto content2 = resource.string();
     auto size2 = resource.size();
     auto data2 = resource.data();
-    
+
     ASSERT(content1 == content2, "Content should be identical on multiple accesses");
     ASSERT_EQ(size1, size2, "Size should be identical on multiple accesses");
     ASSERT(data1 == data2, "Data pointer should be identical (cached)");
@@ -58,7 +58,7 @@ TEST(compressed_file_caching) {
 TEST(compressed_nested_file) {
     auto resource = romfs::get("subdir/nested.txt");
     auto content = resource.string();
-    ASSERT(content.find("subdirectory") != std::string::npos, 
+    ASSERT(content.find("subdirectory") != std::string::npos,
            "Compressed nested file content should be correct");
 }
 
@@ -72,7 +72,7 @@ TEST(list_compressed_files) {
 TEST(compressed_json_file) {
     auto resource = romfs::get("data.json");
     auto content = resource.string();
-    
+
     // Verify JSON structure is preserved
     ASSERT(content.find("{") != std::string::npos, "JSON should start with '{'");
     ASSERT(content.find("}") != std::string::npos, "JSON should end with '}'");

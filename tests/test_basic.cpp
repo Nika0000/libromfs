@@ -38,7 +38,7 @@ TEST(get_file_data_pointer) {
     auto resource = romfs::get("hello.txt");
     const std::byte* data = resource.data();
     ASSERT(data != nullptr, "Data pointer should not be null");
-    
+
     // Check first few bytes
     ASSERT(static_cast<char>(data[0]) == 'H', "First byte should be 'H'");
     ASSERT(static_cast<char>(data[1]) == 'e', "Second byte should be 'e'");
@@ -59,12 +59,12 @@ TEST(get_nonexistent_file_throws) {
 TEST(list_all_files) {
     auto files = romfs::list();
     ASSERT(files.size() > 0, "Should have at least one file");
-    
+
     bool found_hello = false;
     bool found_json = false;
     bool found_binary = false;
     bool found_nested = false;
-    
+
     for (const auto& file : files) {
         std::string path = file.string();
         if (path.find("hello.txt") != std::string::npos) found_hello = true;
@@ -72,7 +72,7 @@ TEST(list_all_files) {
         if (path.find("binary.bin") != std::string::npos) found_binary = true;
         if (path.find("nested.txt") != std::string::npos) found_nested = true;
     }
-    
+
     ASSERT(found_hello, "Should find hello.txt");
     ASSERT(found_json, "Should find data.json");
     ASSERT(found_binary, "Should find binary.bin");
@@ -83,7 +83,7 @@ TEST(list_all_files) {
 TEST(list_subdirectory) {
     auto files = romfs::list("subdir");
     ASSERT(files.size() > 0, "Subdirectory should have at least one file");
-    
+
     bool found_nested = false;
     for (const auto& file : files) {
         if (file.filename() == "nested.txt") {
@@ -106,7 +106,7 @@ TEST(binary_file_integrity) {
     auto resource = romfs::get("binary.bin");
     ASSERT(resource.valid(), "Binary resource should be valid");
     ASSERT(resource.size() > 0, "Binary file should have size > 0");
-    
+
     // Check PNG signature
     const std::byte* data = resource.data();
     ASSERT(static_cast<unsigned char>(data[0]) == 0x89, "PNG signature byte 0 should be 0x89");

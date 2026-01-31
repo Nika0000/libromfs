@@ -32,7 +32,7 @@ inline void register_test(const std::string& name, std::function<void()> func) {
 
 inline int run_all_tests() {
     std::cout << "\n=== Running " << get_tests().size() << " tests ===" << std::endl;
-    
+
     for (const auto& test : get_tests()) {
         std::cout << "Running test: " << test.name << "..." << std::endl;
         test_count()++;
@@ -44,14 +44,14 @@ inline int run_all_tests() {
             failed_count()++;
         }
     }
-    
+
     std::cout << "\nResults: " << (test_count() - failed_count()) << "/" << test_count() << " tests passed" << std::endl;
-    
+
     if (failed_count() > 0) {
         std::cout << "FAILURE: " << failed_count() << " test(s) failed!" << std::endl;
         return 1;
     }
-    
+
     std::cout << "SUCCESS: All tests passed!" << std::endl;
     return 0;
 }
