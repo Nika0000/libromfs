@@ -70,7 +70,6 @@ jobs:
         retention-days: 30
 
   test-without-compression:
-  test-without-compression:
     name: Test without compression
     runs-on: ${{ matrix.os }}
     strategy:
