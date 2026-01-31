@@ -47,12 +47,56 @@ namespace {
         return result;
     }
 
+    bool shouldExcludeFile(const fs::path &filePath, const std::vector<std::string> &excludeExtensions, const std::vector<std::string> &excludeFolders) {
+      // Check if any folder in the path matches excluded folders
+      for (const auto &part : filePath) {
+        std::string partStr = part.string();
+        for (const auto &excludeFolder : excludeFolders) {
+          if (!excludeFolder.empty() && partStr == excludeFolder) {
+            return true;
+          }
+        }
+      }
+
+      // Check if file extension matches excluded extensions
+      if (filePath.has_extension()) {
+        std::string ext = filePath.extension().string();
+        for (const auto &excludeExt : excludeExtensions) {
+          if (!excludeExt.empty()) {
+            // Handle extensions with or without leading dot
+            std::string normalizedExclude = excludeExt;
+            if (!normalizedExclude.empty() && normalizedExclude[0] != '.') {
+              normalizedExclude = "." + normalizedExclude;
+            }
+
+            if (ext == normalizedExclude) {
+              return true;
+            }
+          }
+        }
+      }
+
+      return false;
+    }
 }
 
 int main() {
     std::ofstream outputFile("libromfs_resources.cpp");
 
     std::printf("[libromfs] Resource Folders: %s\n", RESOURCE_LOCATION);
+
+    std::vector<std::string> excludeExtensions;
+    std::vector<std::string> excludeFolders;
+
+#if defined(EXCLUDE_EXTENSIONS)
+    excludeExtensions = splitString(EXCLUDE_EXTENSIONS, ",");
+    std::printf("[libromfs] Excluding extensions: %s\n", EXCLUDE_EXTENSIONS);
+#endif
+
+#if defined(EXCLUDE_FOLDERS)
+    excludeFolders = splitString(EXCLUDE_FOLDERS, ",");
+    std::printf("[libromfs] Excluding folders: %s\n", EXCLUDE_FOLDERS);
+#endif
 
     outputFile << "#include <romfs/romfs.hpp>\n\n";
     outputFile << "#include <array>\n";
@@ -81,13 +125,18 @@ int main() {
         for (const auto &entry : fs::recursive_directory_iterator(resourceLocation)) {
             if (!entry.is_regular_file()) continue;
 
-            auto path = fs::canonical(fs::absolute(entry.path()));
             auto relativePath = fs::relative(entry.path(), fs::absolute(resourceLocation));
+
+            // Check if this file should be excluded
+            if (shouldExcludeFile(relativePath, excludeExtensions, excludeFolders)) {
+              std::printf("[libromfs] Excluding: %s\n", relativePath.string().c_str());
+              continue;
+            }
 
             std::vector<std::uint8_t> inputData;
             inputData.resize(entry.file_size());
 
-            auto file = std::fopen(entry.path().string().c_str(), "rb");
+            auto* file = std::fopen(entry.path().string().c_str(), "rb");
             inputData.resize(std::fread(inputData.data(), 1, entry.file_size(), file));
             std::fclose(file);
 

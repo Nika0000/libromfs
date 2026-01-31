@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.16)
 option(LIBROMFS_PROJECT_NAME "Project name" "")
 option(LIBROMFS_RESOURCE_LOCATION "Resource location" "")
 option(LIBROMFS_COMPRESS_RESOURCES "If resources should be zlib compressed" ON)
+option(LIBROMFS_EXCLUDE_EXTENSIONS "Comma-separated list of file extensions to exclude" "")
+option(LIBROMFS_EXCLUDE_FOLDERS "Comma-separated list of folder names to exclude" "")
 
 if (NOT LIBROMFS_PROJECT_NAME)
     message(FATAL_ERROR "LIBROMFS_PROJECT_NAME is not set")

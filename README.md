@@ -15,6 +15,11 @@ set(LIBROMFS_PROJECT_NAME ${PROJECT_NAME})
 # Set the location of our romfs folder
 set(LIBROMFS_RESOURCE_LOCATION "${CMAKE_SOURCE_DIR}/romfs")
 
+# Optional: Exclude specific file extensions
+# set(LIBROMFS_EXCLUDE_EXTENSIONS ".log,.tmp,.bak,.DS_Store")
+
+# Optional: Exclude specific folder names
+# set(LIBROMFS_EXCLUDE_FOLDERS ".git,.svn,__pycache__,node_modules")
 
 # Include libromfs
 add_subdirectory(libromfs)
