@@ -6,13 +6,13 @@
     #include <zlib.h>
 #endif
 
-std::span<romfs::impl::ResourceLocation> ROMFS_CONCAT(ROMFS_NAME, _get_resources)();
-std::span<std::string_view> ROMFS_CONCAT(ROMFS_NAME, _get_paths)();
+nonstd::span<romfs::impl::ResourceLocation> ROMFS_CONCAT(ROMFS_NAME, _get_resources)();
+nonstd::span<std::string_view> ROMFS_CONCAT(ROMFS_NAME, _get_paths)();
 const char* ROMFS_CONCAT(ROMFS_NAME, _get_name)();
 
 namespace romfs {
 
-    ROMFS_VISIBILITY void impl::ROMFS_CONCAT(decompress_if_needed_, LIBROMFS_PROJECT_NAME)(std::vector<std::byte> &decompressedData, std::span<const std::byte> compressedData) {
+    ROMFS_VISIBILITY void impl::ROMFS_CONCAT(decompress_if_needed_, LIBROMFS_PROJECT_NAME)(std::vector<std::byte> &decompressedData, nonstd::span<const std::byte> compressedData) {
         if (!decompressedData.empty() || compressedData.empty())
             return;
 

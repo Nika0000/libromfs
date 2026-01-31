@@ -4,7 +4,13 @@
 #include <cstddef>
 #include <filesystem>
 #include <string_view>
+
+#if __cplusplus >= 202002L
 #include <span>
+#endif
+
+#include <nonstd/span.hpp>
+
 #include <vector>
 
 #define ROMFS_CONCAT_IMPL(x, y) x##y
@@ -24,13 +30,13 @@ concept ByteType = std::is_trivial_v<T> && sizeof(T) == sizeof(std::byte);
 namespace romfs {
 
     namespace impl {
-        ROMFS_VISIBILITY void ROMFS_CONCAT(decompress_if_needed_, LIBROMFS_PROJECT_NAME)(std::vector<std::byte> &decompressedData, std::span<const std::byte> compressedData);
+        ROMFS_VISIBILITY void ROMFS_CONCAT(decompress_if_needed_, LIBROMFS_PROJECT_NAME)(std::vector<std::byte> &decompressedData, nonstd::span<const std::byte> compressedData);
     }
 
     class Resource {
     public:
         constexpr Resource() = default;
-        explicit constexpr Resource(const std::span<std::byte> &content) : m_compressedData(content) {}
+        explicit constexpr Resource(const nonstd::span<std::byte> &content) : m_compressedData(content) {}
 
         template<ByteType T = std::byte>
         [[nodiscard]] const T* data() const {
@@ -42,7 +48,7 @@ namespace romfs {
         }
 
         template<ByteType T = std::byte>
-        [[nodiscard]] std::span<const T> span() const {
+        [[nodiscard]] nonstd::span<const T> span() const {
             return { this->data<T>(), this->size() };
         }
 
@@ -61,10 +67,17 @@ namespace romfs {
             return { reinterpret_cast<const char*>(this->data()), this->size() + 1 };
         }
 
+#if __cplusplus >= 202002L
         [[nodiscard]]
         std::u8string_view u8string() const {
             return { reinterpret_cast<const char8_t *>(this->data()), this->size() + 1 };
         }
+#else
+        [[nodiscard]]
+        std::string_view u8string() const {
+          return {reinterpret_cast<const char *>(this->data()), this->size() + 1};
+        }
+#endif
 
         [[nodiscard]]
         bool valid() const {
@@ -74,7 +87,7 @@ namespace romfs {
 
     private:
         mutable std::vector<std::byte> m_decompressedData;
-        std::span<const std::byte> m_compressedData;
+        nonstd::span<const std::byte> m_compressedData;
     };
 
     namespace impl {
@@ -93,6 +106,4 @@ namespace romfs {
     [[nodiscard]] ROMFS_VISIBILITY inline const Resource& get(const std::filesystem::path &path) { return impl::ROMFS_CONCAT(get_, LIBROMFS_PROJECT_NAME)(path); }
     [[nodiscard]] ROMFS_VISIBILITY inline std::vector<std::filesystem::path> list(const std::filesystem::path &path = {}) { return impl::ROMFS_CONCAT(list_, LIBROMFS_PROJECT_NAME)(path); }
     [[nodiscard]] ROMFS_VISIBILITY inline std::string_view name() { return impl::ROMFS_CONCAT(name_, LIBROMFS_PROJECT_NAME)(); }
-
-
 }
