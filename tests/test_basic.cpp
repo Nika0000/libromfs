@@ -173,7 +173,7 @@ TEST(romfsignore_includes_allowed_files) {
     auto resource = romfs::get("included.txt");
     ASSERT(resource.valid(), "included.txt should be accessible");
     auto content = resource.string();
-    ASSERT(content.find("should be included") != std::string::npos, 
+    ASSERT(content.find("should be included") != std::string::npos,
            "included.txt should have correct content");
 }
 
