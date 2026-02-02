@@ -50,8 +50,8 @@ jobs:
       working-directory: generator/build
       run: |
         mkdir -p artifact
-        cp generator-standalone artifact/
-        chmod +x artifact/generator-standalone
+        cp libromfs-generator artifact/
+        chmod +x artifact/libromfs-generator
       shell: bash
       
     - name: Prepare artifact (Windows)
@@ -59,7 +59,7 @@ jobs:
       working-directory: generator/build
       run: |
         mkdir artifact
-        copy generator-standalone.exe artifact\
+        copy libromfs-generator.exe artifact\
       shell: cmd
       
     - name: Upload generator artifact

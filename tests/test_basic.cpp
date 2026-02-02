@@ -123,3 +123,67 @@ TEST(json_file_content) {
     ASSERT(content.find("libromfs") != std::string::npos, "JSON should contain 'libromfs' value");
     ASSERT(content.find("compression") != std::string::npos, "JSON should mention 'compression'");
 }
+
+// Test: .romfsignore - Excluded Python files
+TEST(romfsignore_excludes_python) {
+    bool threw = false;
+    try {
+        auto resource = romfs::get("script.py");
+    } catch (const std::invalid_argument&) {
+        threw = true;
+    }
+    ASSERT(threw, "Python files should be excluded by .romfsignore");
+}
+
+// Test: .romfsignore - Excluded temporary files
+TEST(romfsignore_excludes_temp) {
+    bool threw = false;
+    try {
+        auto resource = romfs::get("tempfile.tmp");
+    } catch (const std::invalid_argument&) {
+        threw = true;
+    }
+    ASSERT(threw, "Temporary files should be excluded by .romfsignore");
+}
+
+// Test: .romfsignore - Excluded markdown files
+TEST(romfsignore_excludes_markdown) {
+    bool threw = false;
+    try {
+        auto resource = romfs::get("test.md");
+    } catch (const std::invalid_argument&) {
+        threw = true;
+    }
+    ASSERT(threw, "test.md should be excluded by .romfsignore");
+}
+
+// Test: .romfsignore - Excluded folders
+TEST(romfsignore_excludes_folders) {
+    bool threw = false;
+    try {
+        auto resource = romfs::get("ignored_folder/ignored.txt");
+    } catch (const std::invalid_argument&) {
+        threw = true;
+    }
+    ASSERT(threw, "Files in ignored_folder should be excluded by .romfsignore");
+}
+
+// Test: .romfsignore - Included files are accessible
+TEST(romfsignore_includes_allowed_files) {
+    auto resource = romfs::get("included.txt");
+    ASSERT(resource.valid(), "included.txt should be accessible");
+    auto content = resource.string();
+    ASSERT(content.find("should be included") != std::string::npos, 
+           "included.txt should have correct content");
+}
+
+// Test: .romfsignore - Verify .romfsignore itself is excluded
+TEST(romfsignore_file_excluded) {
+    bool threw = false;
+    try {
+        auto resource = romfs::get(".romfsignore");
+    } catch (const std::invalid_argument&) {
+        threw = true;
+    }
+    ASSERT(threw, ".romfsignore file itself should be excluded");
+}

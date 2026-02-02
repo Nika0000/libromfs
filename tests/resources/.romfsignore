@@ -1,0 +1,15 @@
+# .romfsignore - Test file for libromfs ignore functionality
+# Lines starting with # are comments
+# Blank lines are ignored
+
+# Exclude Python files
+**/*.py
+
+# Exclude temporary files
+**/*.tmp
+
+# Exclude test markdown files
+test.md
+
+# Exclude files in ignored folder
+ignored_folder/**

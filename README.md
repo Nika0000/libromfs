@@ -21,12 +21,6 @@ set(LIBROMFS_RESOURCE_LOCATION "${CMAKE_SOURCE_DIR}/romfs")
 # Optional: Enable zlib compression (requires zlib, see COMPRESSION.md)
 # set(LIBROMFS_COMPRESS_RESOURCES ON)
 
-# Optional: Exclude specific file extensions
-# set(LIBROMFS_EXCLUDE_EXTENSIONS ".log,.tmp,.bak,.DS_Store")
-
-# Optional: Exclude specific folder names
-# set(LIBROMFS_EXCLUDE_FOLDERS ".git,.svn,__pycache__,node_modules")
-
 # Include libromfs
 add_subdirectory(libromfs)
 
@@ -36,6 +30,28 @@ target_link_libraries(my_application PUBLIC ${LIBROMFS_LIBRARY})
 
 Now, you can place all your files and folders into the `./romfs` folder next to your `CMakeLists.txt` file. 
 All files in this folder will now be packed into the `.rodata` section of a static library which then can be linked to your main application.
+
+### Excluding Files with .romfsignore
+
+You can optionally create a `.romfsignore` file in your resource folder to exclude specific files and directories from being embedded. The syntax is similar to `.gitignore`:
+
+```sh
+# .romfsignore - Exclude files from ROM filesystem
+# Lines starting with # are comments
+# Blank lines are ignored
+
+# Exclude all Python files
+**/*.py
+
+# Exclude markdown documentation  
+**/*.md
+
+# Exclude entire folders
+docs/**
+.git/**
+```
+
+### Accessing Files
 
 To access the files in the `./romfs` directory structure now, simply use `romfs::get` to get back an object containing functions to access the file's data.
 The interface is comparable to regular C File I/O, `romfs::get()` is the counterpart to `fopen()` and the data access functions inside of the object are counterparts to `fread()`.

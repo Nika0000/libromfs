@@ -46,6 +46,63 @@ jobs:
       working-directory: tests
       run: ctest --test-dir build --output-on-failure --build-config Release
 
+  test-romfsignore:
+    name: Test .romfsignore functionality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake g++ ninja-build
+        
+    - name: Verify test files exist
+      working-directory: tests/resources
+      run: |
+        echo "Checking test files for .romfsignore..."
+        ls -la
+        test -f .romfsignore || (echo ".romfsignore not found!" && exit 1)
+        test -f script.py || (echo "script.py not found!" && exit 1)
+        test -f tempfile.tmp || (echo "tempfile.tmp not found!" && exit 1)
+        test -f test.md || (echo "test.md not found!" && exit 1)
+        test -f ignored_folder/ignored.txt || (echo "ignored_folder/ignored.txt not found!" && exit 1)
+        test -f included.txt || (echo "included.txt not found!" && exit 1)
+        echo "All test files present"
+        
+    - name: Configure CMake
+      working-directory: tests
+      run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      
+    - name: Build
+      working-directory: tests
+      run: cmake --build build --config Release
+      
+    - name: Verify excluded files are not embedded
+      working-directory: tests/build
+      run: |
+        echo "Checking that excluded files are not in the binary..."
+        # Check that excluded patterns are NOT present in the binary
+        ! strings libromfs-test | grep -q "This Python script should not be embedded" || (echo "Python script was embedded!" && exit 1)
+        ! strings libromfs-test | grep -q "This is a temporary file" || (echo "Temp file was embedded!" && exit 1)
+        ! strings libromfs-test | grep -q "This test.md file should be excluded" || (echo "Markdown file was embedded!" && exit 1)
+        ! strings libromfs-test | grep -q "This file should be ignored" || (echo "Ignored folder file was embedded!" && exit 1)
+        echo "Excluded files verified to be absent from binary"
+        
+    - name: Verify included files are embedded
+      working-directory: tests/build
+      run: |
+        echo "Checking that included files ARE in the binary..."
+        strings libromfs-test | grep -q "Hello, libromfs!" || (echo "hello.txt not found in binary!" && exit 1)
+        strings libromfs-test | grep -q "should be included" || (echo "included.txt not found in binary!" && exit 1)
+        echo "Included files verified to be present in binary"
+      
+    - name: Run .romfsignore tests
+      working-directory: tests
+      run: ctest --test-dir build --output-on-failure --build-config Release
+
   test-with-compression:
     name: Test with compression
     runs-on: ${{ matrix.os }}

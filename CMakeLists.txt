@@ -3,8 +3,6 @@ cmake_minimum_required(VERSION 3.16)
 option(LIBROMFS_PROJECT_NAME "Project name" "")
 option(LIBROMFS_RESOURCE_LOCATION "Resource location" "")
 option(LIBROMFS_COMPRESS_RESOURCES "If resources should be zlib compressed (IMPORTANT: both generator and library must have zlib available, or you'll get a compile error)" OFF)
-option(LIBROMFS_EXCLUDE_EXTENSIONS "Comma-separated list of file extensions to exclude" "")
-option(LIBROMFS_EXCLUDE_FOLDERS "Comma-separated list of folder names to exclude" "")
 option(LIBROMFS_PREBUILT_GENERATOR "Using prebuilt resources generator" "")
 
 if (NOT LIBROMFS_PROJECT_NAME)
