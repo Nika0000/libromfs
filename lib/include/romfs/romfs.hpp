@@ -36,7 +36,7 @@ namespace romfs {
     class Resource {
     public:
         Resource() = default;
-        explicit constexpr Resource(const nonstd::span<std::byte> &content) : m_compressedData(content) {}
+        explicit Resource(const nonstd::span<std::byte> &content) : m_compressedData(content) {}
 
         [[nodiscard]]
         const std::byte* data() const {
